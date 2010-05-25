@@ -8,6 +8,7 @@ package org.mobiweb.mobile;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
 
@@ -73,7 +74,10 @@ public class ServerCommunication {
     
     public ServerResponse sendPostMessage(Message message) throws ConnectionException {
         DataInputStream dis;
-        DataOutputStream dos;
+        // DataOutputStream dos;
+
+        OutputStream os;
+
         ServerResponse serverResponse = new ServerResponse();
 
         if(!message.isMessageClosed()) {
@@ -85,21 +89,11 @@ public class ServerCommunication {
                 httpConnection.setRequestMethod(HttpConnection.POST);
                 httpConnection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + message.getBoundary());
 
-                dos = httpConnection.openDataOutputStream();
-                String finalMessage = message.getMessageContent() + "--" + message.getBoundary() + "--\r\n";
-                
-                byte[] byteStream = finalMessage.getBytes();
+                os = httpConnection.openOutputStream();
 
-                dos.write(byteStream);
+                os.write(message.getOutputStream().toByteArray());
 
-                /*
-                Another method you can use:
-                for(int byteLoop = 0; byteLoop < byteStream.length; byteLoop ++) {
-                    dos.writeByte(byteStream[byteLoop]);
-                }
-                */
-
-                dos.close();
+                os.close();
 
                 dis = new DataInputStream(httpConnection.openDataInputStream());
                 long len = httpConnection.getLength();

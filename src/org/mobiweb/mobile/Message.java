@@ -5,8 +5,9 @@
 
 package org.mobiweb.mobile;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import org.mobiweb.mobile.util.Common;
-import javax.microedition.lcdui.*;
 import org.mobiweb.mobile.exceptions.MessageException;
 
 /**
@@ -17,6 +18,9 @@ public class Message {
 
     private String messageContent;
     private String boundary;
+
+    private byte[] postBytes = null;
+    private ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
     private boolean messageClosed = false;
 
@@ -45,50 +49,98 @@ public class Message {
     public void addParameter(String paramName, String param) throws MessageException {
         // Adds a parameter to the message
 
+        String messageToAppend = "";
+
         if(messageClosed) {
             throw new MessageException();
         }
 
-        messageContent +=
+        messageToAppend =
             "--" + boundary + "\r\n" +
             "Content-Disposition: form-data; name=\"param_" + paramName + "\"\r\n\r\n" +
             param + "\r\n";
+
+        messageContent += messageToAppend;
+
+        try {
+            bos.write(messageToAppend.getBytes());
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     public void addPhoto(String photoName, byte[] photoData) throws MessageException {
         // Adds a photograph to the message
 
+        String messageToAppend;
+
         if(messageClosed) {
             throw new MessageException();
         }
 
-        messageContent += "--" + boundary + "\r\n" +
+        messageToAppend = "--" + boundary + "\r\n" +
             "Content-Disposition: form-data; name=\"photo_"+ photoName +"\"; filename=\""+ photoName +"\"\r\n" +
-            "Content-Type: image/jpeg\r\n\r\n";
+            "Content-Type: image/png\r\n\r\n";
 
-        Image image = Image.createImage(photoData, 0,photoData.length);
-        String imageString = new String(photoData);
+        messageContent += messageToAppend;
         
+        String imageString = new String(photoData);
+
         messageContent += imageString;
+        messageContent += "\r\n";
+        
+        try {
+            bos.write(messageToAppend.getBytes());
+            bos.write(photoData);
+            bos.write("\r\n".getBytes());
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     public void addFile(String fileName, byte[] fileData) throws MessageException {
         // Adds a file to the message
 
+        String messageToAppend;
+
         if(messageClosed) {
             throw new MessageException();
         }
 
-        messageContent += "--" + boundary + "\r\n" +
-            "Content-Disposition: attachment; name=\"file_"+ fileName +"\"; filename=\""+ fileName +"\"\r\n\r\n";
+        messageToAppend = "--" + boundary + "\r\n" +
+            "Content-Disposition: form-data; name=\"file_"+ fileName +"\"; filename=\""+ fileName +"\"\r\n\r\n";
 
+        messageContent += messageToAppend;
         messageContent += new String(fileData);
+        messageContent += "\r\n";
+        
+        try {
+            bos.write(messageToAppend.getBytes());
+            bos.write(fileData);
+            bos.write("\r\n".getBytes());
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     public void closeMessage() {
         // Close the entire message
-        
-        messageContent += "\r\n--" + boundary + "--\r\n";
+
+        String messageToAppend;
+
+        messageToAppend = "\r\n--" + boundary + "--\r\n";
+        messageContent += messageToAppend;
+
+        try {
+            bos.write(messageToAppend.getBytes());
+            bos.close();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
         messageClosed = true;
+    }
+
+    public ByteArrayOutputStream getOutputStream() {
+        return bos;
     }
 }

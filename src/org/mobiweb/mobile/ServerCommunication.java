@@ -76,6 +76,10 @@ public class ServerCommunication {
         DataOutputStream dos;
         ServerResponse serverResponse = new ServerResponse();
 
+        if(!message.isMessageClosed()) {
+            message.closeMessage();
+        }
+
         if(httpConnection != null) {
             try {
                 httpConnection.setRequestMethod(HttpConnection.POST);
